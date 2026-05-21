@@ -30,9 +30,13 @@ jobs:
       - name: Cache vector store
         uses: actions/cache@v3
         with:
-          path: ./vector_store
-          key: chromadb-${{ runner.os }}-${{ github.ref_name }}
-          restore-keys: chromadb-${{ runner.os }}-
+          path: |
+            ./vector_store
+            ./.doc_pipeline_state.json
+          key: chromadb-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            chromadb-${{ runner.os }}-${{ github.ref_name }}-
+            chromadb-${{ runner.os }}-
 
       - run: pip install -r requirements.txt
 
@@ -48,7 +52,7 @@ jobs:
           git config user.email "docs-bot@github-actions"
           git fetch origin docs/ia || true
           git checkout docs/ia 2>/dev/null || git checkout -b docs/ia
-          git add docs/ vector_store/
+          git add docs/
           git diff --staged --quiet && echo "Sin cambios en docs." && exit 0
           git commit -m "docs: auto-update desde ${{ github.sha }}"
           git push origin docs/ia
