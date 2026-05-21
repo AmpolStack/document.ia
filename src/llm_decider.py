@@ -28,13 +28,21 @@ def load_schema_text() -> str:
         return f.read()
 
 
-def build_prompt(diff_text: str, dev_context: str, user_context: str) -> str:
+def build_prompt(
+    diff_text: str,
+    dev_context: str,
+    user_context: str,
+    dev_docs_inventory: str,
+    user_docs_inventory: str,
+) -> str:
     """Build the LLM prompt for documentation decision-making.
 
     Args:
         diff_text: Formatted git diff text
         dev_context: Relevant developer documentation context
         user_context: Relevant user documentation context
+        dev_docs_inventory: Existing developer docs file inventory
+        user_docs_inventory: Existing user docs file inventory
 
     Returns:
         Complete LLM prompt as string
@@ -79,6 +87,12 @@ Rules:
 - If no changes are needed, return {empty_actions}.
 - Content must be valid markdown.
 - Use the provided context to maintain consistency.
+- Prefer `update` over `create` when an existing document already covers the same module, class, function, concept, or user task.
+- Prefer returning {empty_actions} instead of creating redundant documentation when the existing context already covers the detected changes.
+- Only use `create` when the required documentation does not already exist in the provided context.
+- Never create a duplicate document for a symbol or concept that is already documented; update the existing file instead.
+- Before proposing `create`, inspect the inventory of existing files and reuse the closest relevant file whenever possible.
+- If an existing file already documents the same source module or concept with a slightly different title, treat it as existing documentation and use `update`.
 
 === DIFF ===
 {diff_text}
@@ -86,8 +100,14 @@ Rules:
 === DEVELOPER DOCUMENTATION CONTEXT ===
 {dev_context if dev_context else "No previous context available."}
 
+=== EXISTING DEVELOPER DOC FILES ===
+{dev_docs_inventory if dev_docs_inventory else "No developer docs files found."}
+
 === USER DOCUMENTATION CONTEXT ===
 {user_context if user_context else "No previous context available."}
+
+=== EXISTING USER DOC FILES ===
+{user_docs_inventory if user_docs_inventory else "No user docs files found."}
 
 === SCHEMA ===
 {schema_text}
@@ -132,13 +152,21 @@ def parse_llm_response(raw: str) -> List[Dict[str, Any]]:
     return data.get("actions", [])
 
 
-def decide_actions(diff_text: str, dev_context: str, user_context: str) -> List[Dict[str, Any]]:
+def decide_actions(
+    diff_text: str,
+    dev_context: str,
+    user_context: str,
+    dev_docs_inventory: str,
+    user_docs_inventory: str,
+) -> List[Dict[str, Any]]:
     """Orchestrate the LLM call and return the list of actions to execute.
 
     Args:
         diff_text: Formatted git diff text
         dev_context: Relevant developer documentation context
         user_context: Relevant user documentation context
+        dev_docs_inventory: Existing developer docs file inventory
+        user_docs_inventory: Existing user docs file inventory
 
     Returns:
         List of action dictionaries to execute
@@ -146,9 +174,17 @@ def decide_actions(diff_text: str, dev_context: str, user_context: str) -> List[
     Raises:
         Exception: If LLM call or parsing fails
     """
-    prompt = build_prompt(diff_text, dev_context, user_context)
+    prompt = build_prompt(
+        diff_text,
+        dev_context,
+        user_context,
+        dev_docs_inventory,
+        user_docs_inventory,
+    )
     print("[llm_decider] Sending prompt to LLM...")
     raw_response = call_llm(prompt)
+    print("[llm_decider] Raw LLM response:")
+    print(f"[llm_decider_resp]: {raw_response}")
     print("[llm_decider] Response received, parsing...")
     actions = parse_llm_response(raw_response)
     print(f"[llm_decider] {len(actions)} actions decided.")
