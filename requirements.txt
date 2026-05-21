@@ -4,3 +4,7 @@ python-dotenv
 tiktoken
 chromadb
 sentence-transformers
+llama-index-core
+llama-index-embeddings-huggingface
+llama-index-vector-stores-chroma
+llama-index-llms-openai-like
