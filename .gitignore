@@ -174,3 +174,9 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+
+vector_store/
+.doc_pipeline_state.json
+website/node_modules/
+website/.docusaurus/
+website/build/
