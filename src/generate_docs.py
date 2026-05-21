@@ -6,11 +6,11 @@ from pathlib import Path
 import yaml
 from dotenv import load_dotenv
 
-from diff_parser import FileChange, format_diff_for_prompt, get_structured_diff
+from src.diff_parser import FileChange, format_diff_for_prompt, get_structured_diff
 
 load_dotenv()
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path.cwd()
 SCHEMA_PATH = ROOT / "docs" / "schema.yml"
 DEV_DOC_PATH = ROOT / "docs" / "dev"
 USER_DOC_PATH = ROOT / "docs" / "user"

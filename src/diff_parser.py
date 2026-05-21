@@ -4,9 +4,9 @@ import re
 import subprocess
 from pathlib import Path
 
-from config import FileChange
+from src.config import FileChange
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path.cwd()
 
 
 def get_structured_diff(
