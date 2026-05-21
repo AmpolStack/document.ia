@@ -2,19 +2,11 @@ from __future__ import annotations
 
 import re
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
 
+from config import FileChange
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
-
-
-@dataclass
-class FileChange:
-    filename: str
-    added_lines: list[str]
-    removed_lines: list[str]
-    hunks: list[str]
-    change_summary: str
 
 
 def get_structured_diff(
