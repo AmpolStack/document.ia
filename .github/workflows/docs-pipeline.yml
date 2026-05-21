@@ -3,7 +3,7 @@ name: Auto Documentation
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths: ['src/**']
 
 jobs:
