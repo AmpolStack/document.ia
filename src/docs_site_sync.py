@@ -114,7 +114,7 @@ def _build_frontmatter(directory: Path) -> str:
 def _build_section(title: str, items: Iterable[str]) -> str:
     items = list(items)
     if not items:
-        return f"## {title}\n\n- Sin elementos todavia."
+        return f"## {title}\n\n- Sin elementos aún."
     return f"## {title}\n\n" + "\n".join(items)
 
 
