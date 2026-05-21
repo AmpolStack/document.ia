@@ -107,7 +107,7 @@ Rules:
 {diff_text}
 
 === DEVELOPER DOCUMENTATION CONTEXT ===
-{dev_context if dev_context else "No previous context available."}
+{dev_context if dev_context else "previous context is not available."}
 
 === EXISTING DEVELOPER DOC FILES ===
 {dev_docs_inventory if dev_docs_inventory else "No developer docs files found."}
