@@ -1,0 +1,35 @@
+# docs/schema.yml
+version: "1.0"
+framework: diataxis
+
+audiences:
+  dev:
+    path: docs/dev/
+    profile: "Desarrollador. Busca precisión técnica. Consulta puntualmente."
+    sections:
+      tutorials:  "Guía de inicio guiado. El lector nunca ha tocado el proyecto."
+      how-to:     "Tareas específicas. Asume conocimiento base. Directo al punto."
+      reference:  "Firmas, parámetros, tipos, errores. Se consulta, no se lee."
+      explanation: "Decisiones de arquitectura y contexto del por qué."
+
+  user:
+    path: docs/user/
+    profile: "Usuario final. Sin jerga técnica. Orientado a lo que puede hacer."
+    sections:
+      tutorials:  "Onboarding. Primera experiencia con el producto."
+      how-to:     "Cómo completar una tarea específica."
+      reference:  "Glosario y términos del dominio."
+      explanation: "Cómo funciona algo del producto, sin tecnicismos."
+
+decision_rules:
+  - "Si el cambio es refactor interno sin cambio de comportamiento → no documentar"
+  - "Si cambia una firma, endpoint o configuración → actualizar reference/ de dev"
+  - "Si se agrega una feature visible → actualizar how-to/ de ambas audiencias"
+  - "Si cambia arquitectura → actualizar explanation/ de dev"
+  - "Actualizar solo las secciones afectadas, nunca reescribir archivos completos"
+  - "Si el archivo no existe → crearlo. Nombre en kebab-case descriptivo de la acción o concepto"
+  - "Si se crea un archivo nuevo → actualizar el README.md índice de esa audiencia"
+
+naming:
+  dev: "reference → noun.md | how-to → how-to-verb-noun.md | explanation → concept.md"
+  user: "how-to → how-to-verb-noun.md | explanation → concept.md"
