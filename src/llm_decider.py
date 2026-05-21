@@ -107,13 +107,13 @@ Rules:
 {diff_text}
 
 === DEVELOPER DOCUMENTATION CONTEXT ===
-{dev_context if dev_context else "No previous context available."}
+{dev_context if dev_context else "Previous context is not available."}
 
 === EXISTING DEVELOPER DOC FILES ===
 {dev_docs_inventory if dev_docs_inventory else "No developer docs files found."}
 
 === USER DOCUMENTATION CONTEXT ===
-{user_context if user_context else "No previous context available."}
+{user_context if user_context else "Previous context is not available."}
 
 === EXISTING USER DOC FILES ===
 {user_docs_inventory if user_docs_inventory else "No user docs files found."}
