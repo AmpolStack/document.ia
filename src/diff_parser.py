@@ -33,6 +33,11 @@ def get_structured_diff(
         print("[diff_parser] No changes found.")
         return []
 
+    print(f"[diff_parser] Raw diff lines: {len(raw.splitlines())}")
+    print("[diff_parser] Raw diff:")
+    print(raw)
+    print("[diff_parser] End raw diff")
+
     changes = _parse_diff(raw)
     print(f"[diff_parser] Parsed {len(changes)} changed file(s)")
     return changes
@@ -94,6 +99,10 @@ def _build_change(
     )
 
     print(f"[diff_parser] Parsed file change: {change.change_summary}")
+    if added:
+        print(f"              Added ({len(added)}): {added[:5]}{'...' if len(added) > 5 else ''}")
+    if removed:
+        print(f"              Removed ({len(removed)}): {removed[:5]}{'...' if len(removed) > 5 else ''}")
     return change
 
 
