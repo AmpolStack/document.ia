@@ -40,7 +40,7 @@ jobs:
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         run: |
-          cd scripts
+          cd src
           python -m src.generate_docs
 
       - name: Commit a branch docs/ia
