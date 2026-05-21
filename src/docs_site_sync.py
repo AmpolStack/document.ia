@@ -1,4 +1,16 @@
-"""Utilities to keep docs/ navigable for static site generators like Docusaurus."""
+"""Synchronize navigable index pages for static documentation sites.
+
+This module maintains landing pages under ``docs/`` so the generated markdown
+is usable both in-repo and in site generators such as Docusaurus.
+
+Project implications:
+- Documentation quality in this project is not only about content, but also
+  about browseability for reviewers and end users.
+- Generated landing pages create a second layer of derived docs that must stay
+  consistent with the primary markdown pages.
+- Because these pages may also be indexed into the vector store, navigation and
+  retrieval behavior are indirectly connected.
+"""
 
 from __future__ import annotations
 

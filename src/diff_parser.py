@@ -1,7 +1,15 @@
-"""Diff parsing module for extracting structured changes from git.
+"""Git diff extraction and normalization for documentation decisions.
 
-This module provides functionality to parse git diffs and extract organized
-information about file changes, including added/removed lines and context hunks.
+This module converts repository history into a prompt-friendly representation
+that the rest of the pipeline can reason about. It focuses on ``src/`` because
+the project treats source-code changes as the trigger for documentation
+updates.
+
+Project implications:
+- The selected commit range defines what the bot believes is "new work".
+- The shape and size of the generated diff strongly influence LLM quality.
+- Because this layer is text-based and language-agnostic, it is simple and
+  robust, but it cannot infer semantics beyond what the diff exposes.
 """
 
 from __future__ import annotations
@@ -21,18 +29,24 @@ def get_structured_diff(
     target_ref: str = "HEAD",
     path: str = "src/"
 ) -> list[FileChange]:
-    """Extract structured changes between two git references.
+    """Extract structured source-code changes between two git references.
 
     Args:
-        base_ref: Base git reference (default: configured base ref)
-        target_ref: Target git reference (default: HEAD)
-        path: Directory path to analyze (default: src/)
+        base_ref: Git reference used as the comparison baseline.
+        target_ref: Git reference treated as the new state.
+        path: Repository subpath to analyze, usually ``src/``.
 
     Returns:
         List of FileChange objects representing modified files
 
     Raises:
-        RuntimeError: If git diff command fails
+        RuntimeError: If the git command fails.
+
+    Project implications:
+    - This function defines the exact change slice the documentation system
+      sees.
+    - If the base ref is wrong, the project can re-document old commits or
+      miss documentation for new ones.
     """
     diff_path = str(Path(path))
     print(f"[diff_parser] Running git diff {base_ref}..{target_ref} -- {diff_path}")
@@ -64,7 +78,12 @@ def get_structured_diff(
 
 
 def get_current_head() -> str:
-    """Return the current HEAD commit hash."""
+    """Return the current repository ``HEAD`` commit hash.
+
+    Project implications:
+    - The pipeline stores this value to avoid reprocessing the same commit on
+      subsequent runs.
+    """
     result = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         capture_output=True,
@@ -77,9 +96,14 @@ def get_current_head() -> str:
 
 
 def resolve_diff_base(last_processed_commit: Optional[str]) -> Optional[str]:
-    """Resolve the correct base ref for documentation diffing.
+    """Resolve the appropriate git base for the next documentation run.
 
-    Returns None when the current HEAD was already processed.
+    Returns ``None`` when the current ``HEAD`` was already processed.
+
+    Project implications:
+    - This is a key safeguard against redundant documentation generation.
+    - If the persisted state becomes stale or corrupted, the project may skip
+      necessary work or re-run historical work.
     """
     current_head = get_current_head()
     if last_processed_commit and last_processed_commit == current_head:
@@ -91,13 +115,13 @@ def resolve_diff_base(last_processed_commit: Optional[str]) -> Optional[str]:
 
 
 def _parse_diff(raw: str) -> list[FileChange]:
-    """Parse raw git diff output into structured FileChange objects.
+    """Parse raw ``git diff`` output into ``FileChange`` records.
 
     Args:
-        raw: Raw git diff output text
+        raw: Exact stdout emitted by the git diff command.
 
     Returns:
-        List of FileChange objects extracted from diff
+        List of parsed ``FileChange`` objects.
     """
     changes: list[FileChange] = []
     current_file = None
@@ -139,16 +163,16 @@ def _build_change(
     removed: list[str],
     hunks: list[str],
 ) -> FileChange:
-    """Build a FileChange object from raw diff components.
+    """Create a normalized ``FileChange`` object from raw diff fragments.
 
     Args:
-        filename: Name of the changed file
-        added: List of added lines
-        removed: List of removed lines
-        hunks: List of diff hunks
+        filename: Repository-relative filename from the diff header.
+        added: Added lines stripped of their leading diff marker.
+        removed: Removed lines stripped of their leading diff marker.
+        hunks: Raw diff lines preserved in order.
 
     Returns:
-        FileChange object with organized change information
+        A populated ``FileChange`` value ready for prompt formatting.
     """
     parts: list[str] = []
     if added:
@@ -176,14 +200,20 @@ def format_diff_for_prompt(
     changes: list[FileChange],
     max_lines_per_file: int = DIFF_MAX_LINES_PER_FILE,
 ) -> str:
-    """Format FileChange objects into a prompt-friendly diff string.
+    """Render parsed file changes into a compact markdown diff prompt.
 
     Args:
-        changes: List of FileChange objects to format
-        max_lines_per_file: Maximum number of hunk lines to include per file
+        changes: Structured file changes to serialize.
+        max_lines_per_file: Maximum number of raw diff lines retained per file.
 
     Returns:
-        Formatted diff string suitable for LLM prompts
+        Prompt-friendly markdown string.
+
+    Project implications:
+    - This is the last deterministic step before LLM reasoning.
+    - The line budget is a direct trade-off between completeness and token
+      efficiency, which affects whether the model can recognize existing docs
+      coverage.
     """
     parts: list[str] = []
     for change in changes:

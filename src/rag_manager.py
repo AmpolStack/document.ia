@@ -1,8 +1,16 @@
-"""RAG (Retrieval-Augmented Generation) manager for documentation indexing and retrieval.
+"""RAG layer for indexing and retrieving documentation context.
 
-This module handles the indexing of documentation files into a vector store (ChromaDB)
-and provides semantic search capabilities for retrieving relevant documentation context
-based on code changes.
+This module manages the vector-store side of the project. It indexes markdown
+documents into ChromaDB, configures the embedding stack, and retrieves the most
+relevant documentation snippets for a given source-code diff.
+
+Project implications:
+- This is the memory system of the pipeline. Without strong retrieval, the LLM
+  behaves as if the project has little or no prior documentation.
+- Retrieval thresholds influence duplication behavior almost as much as prompt
+  wording does.
+- Because the vector store is cached in CI, consistency between disk state and
+  index state matters for correctness across workflow runs.
 """
 
 import os
@@ -41,10 +49,16 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 
 
 def configure_llamaindex():
-    """Configure global LlamaIndex settings.
+    """Configure shared LlamaIndex runtime settings.
 
-    Initializes the LLM, embedding model, and text splitter with
-    predefined configurations. This should be called once on module import.
+    This function initializes the LLM client, embedding model, and text
+    splitter from centralized project configuration and is executed once on
+    module import.
+
+    Project implications:
+    - The configured model and embedding stack affect both cost and quality.
+    - Authentication and local model availability issues usually surface here
+      first.
     """
     if not LLM_API_KEY:
         raise ValueError(
@@ -73,13 +87,13 @@ def configure_llamaindex():
 
 
 def _get_chroma_collection(audience: str):
-    """Retrieve or create a ChromaDB collection for a specific audience.
+    """Retrieve or create the ChromaDB collection for a documentation audience.
 
     Args:
-        audience: Documentation type ('dev' for developers, 'user' for end users)
+        audience: Documentation audience, usually ``dev`` or ``user``.
 
     Returns:
-        Tuple of (ChromaVectorStore, collection_name)
+        Tuple of ``(vector_store, collection_name)``.
     """
     collection_name = f"docs_{audience}"
     chroma_client = chromadb.PersistentClient(path=VECTOR_STORE_PATH)
@@ -92,9 +106,10 @@ def _get_chroma_collection(audience: str):
 
 
 def _chunk_markdown_smart(text: str) -> List[str]:
-    """Divide markdown into smart chunks respecting document structure.
+    """Split markdown into retrieval chunks while respecting section structure.
 
-    Prioritizes sectioning (##) over strict size limits to maintain context.
+    The strategy prefers section boundaries over uniform chunking so retrieved
+    snippets remain meaningful to the LLM.
 
     Args:
         text: Full content of markdown file
@@ -120,14 +135,21 @@ def _chunk_markdown_smart(text: str) -> List[str]:
 
 
 def index_docs(audience: str, filepath: str, replace: bool = True) -> None:
-    """Index a markdown file into the vector store.
+    """Index a single markdown file into the vector store.
 
-    If replace=True, removes previous nodes for the same file before indexing.
+    When ``replace`` is true, previously indexed nodes for the same source path
+    are removed first so the vector store reflects current file contents.
 
     Args:
-        audience: Documentation type ('dev' or 'user')
-        filepath: Path to the markdown file to index
-        replace: Whether to replace existing entries for this file (default: True)
+        audience: Documentation audience such as ``dev`` or ``user``.
+        filepath: Markdown file path to index.
+        replace: Whether older index entries for the same file should be removed.
+
+    Project implications:
+    - This function is the bridge between markdown on disk and semantic memory
+      in Chroma.
+    - If re-indexing is stale or incomplete, the next run may behave as though
+      the project forgot its own documentation.
     """
     if not os.path.exists(filepath):
         print(f"[rag] Note: {filepath} does not exist, will be indexed when generated.")
@@ -209,17 +231,25 @@ def is_collection_empty(audience: str) -> bool:
 
 
 def query_relevant_context(query: str, audience: str, n_results: int = RAG_TOP_K) -> str:
-    """Retrieve relevant documentation chunks based on semantic similarity.
+    """Retrieve semantically relevant documentation chunks for a query.
 
-    Uses LlamaIndex for semantic search across the vector store.
+    The query is typically a formatted git diff. Returned text is later embedded
+    into the LLM prompt as evidence of what the project already documents.
 
     Args:
-        query: Search text (usually the code diff)
-        audience: Documentation type ('dev' or 'user')
-        n_results: Maximum number of chunks to retrieve (default: 3)
+        query: Search text, usually the formatted code diff.
+        audience: Documentation audience such as ``dev`` or ``user``.
+        n_results: Maximum number of candidate chunks to inspect.
 
     Returns:
-        String with relevant chunks concatenated, or empty string if no results
+        Concatenated relevant chunks, or an empty string when nothing useful is
+        found.
+
+    Project implications:
+    - This function determines whether the LLM sees prior docs as available
+      project memory or as missing context.
+    - Under-retrieval leads to duplication. Over-retrieval adds noise and can
+      reduce decision quality.
     """
     print(f"[rag] Searching context for '{audience}'...")
 

@@ -1,11 +1,22 @@
-"""Main module for automatic documentation generation pipeline.
+"""Main orchestration entry point for automatic documentation generation.
 
-This module orchestrates the entire documentation generation workflow:
-1. Analyzes git diffs for code changes
-2. Queries existing documentation context
-3. Uses LLM to decide documentation updates
-4. Executes the decided actions (create, update, delete)
-5. Updates the vector store with new documentation
+This module coordinates the full project workflow:
+1. Resolve the commit range that still needs documentation.
+2. Extract source-code changes from ``src/``.
+3. Read and inventory existing markdown documentation.
+4. Retrieve relevant semantic context from the vector store.
+5. Ask the LLM which documentation actions should occur.
+6. Harden those actions against obviously redundant outcomes.
+7. Persist markdown updates and refresh the vector store.
+8. Maintain static-site index pages under ``docs/``.
+
+Project implications:
+- This file is the operational heart of the project. Most "why did the bot
+  document this?" questions trace back to choices made here.
+- The module intentionally mixes deterministic checks with LLM-driven judgment
+  so the system remains flexible without becoming completely unconstrained.
+- Changes here affect cost, duplication behavior, CI safety, and the developer
+  review experience on the dedicated documentation branch.
 """
 
 from __future__ import annotations
@@ -44,18 +55,24 @@ from src.rag_manager import (
     delete_docs_by_source,
 )
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))  # Add project root to PYTHONPATH
+# Add the repository root so direct module execution behaves consistently in
+# local shells and CI environments.
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 load_dotenv()
 
 
 def load_schema() -> dict:
-    """Load and parse the documentation schema.
+    """Load and parse the project documentation schema.
 
     Returns:
-        Dictionary containing the schema definition
+        Parsed schema configuration.
 
     Raises:
-        FileNotFoundError: If schema.yml does not exist
+        FileNotFoundError: If ``schema.yml`` does not exist.
+
+    Project implications:
+    - The schema acts as the policy layer of the project. If it changes, the
+      same code diff can lead to different documentation outcomes.
     """
     print(f"[generate_docs] Loading schema from {SCHEMA_PATH}")
 
@@ -70,7 +87,11 @@ def load_schema() -> dict:
 
 
 def load_pipeline_state() -> dict:
-    """Load persisted pipeline state from disk."""
+    """Load persisted pipeline state from disk.
+
+    The state currently stores the last processed commit so the pipeline can
+    avoid re-documenting the same revision across executions.
+    """
     if not PIPELINE_STATE_PATH.exists():
         return {}
     try:
@@ -81,7 +102,7 @@ def load_pipeline_state() -> dict:
 
 
 def save_pipeline_state(state: dict) -> None:
-    """Persist pipeline state to disk."""
+    """Persist pipeline state to disk for future runs."""
     PIPELINE_STATE_PATH.write_text(
         json.dumps(state, indent=2, ensure_ascii=False),
         encoding="utf-8",
@@ -89,7 +110,13 @@ def save_pipeline_state(state: dict) -> None:
 
 
 def ensure_schema() -> None:
-    """Ensure schema.yml exists, creating a default one if necessary."""
+    """Ensure ``schema.yml`` exists, creating a minimal fallback if required.
+
+    Project implications:
+    - The generated fallback schema keeps the pipeline runnable, but it is only
+      a safety net. Real project behavior should be driven by the curated
+      schema checked into ``docs/``.
+    """
     if SCHEMA_PATH.exists():
         print(f"[generate_docs] Schema already exists at {SCHEMA_PATH}")
         return
@@ -117,14 +144,18 @@ def ensure_schema() -> None:
 
 
 def get_docs_tree(base_path: Path, label: str) -> dict[str, str]:
-    """Collect all markdown files from a documentation directory.
+    """Read every markdown file under a documentation root.
 
     Args:
-        base_path: Root directory path for documentation
-        label: Human-readable label for the documentation type
+        base_path: Root directory containing markdown documentation.
+        label: Human-readable audience label used in logs.
 
     Returns:
-        Dictionary mapping file paths to file contents
+        Mapping from absolute file path to file content.
+
+    Project implications:
+    - This direct filesystem view complements the vector store and provides a
+      deterministic source of truth about what docs currently exist.
     """
     print(f"[generate_docs] Reading {label} documentation from {base_path}")
 
@@ -142,7 +173,11 @@ def get_docs_tree(base_path: Path, label: str) -> dict[str, str]:
 
 
 def build_docs_inventory(tree: dict[str, str]) -> str:
-    """Build a compact inventory of existing docs for the LLM."""
+    """Build a compact inventory of existing docs for the LLM.
+
+    The inventory gives the model explicit visibility into which files already
+    exist, which helps reduce duplicate ``create`` actions.
+    """
     if not tree:
         return ""
 
@@ -161,14 +196,18 @@ def build_docs_inventory(tree: dict[str, str]) -> str:
 
 
 def normalize_doc_key(value: str) -> str:
-    """Normalize a doc path or title into a comparable concept key."""
+    """Normalize a path or title into a comparison-friendly concept slug."""
     text = Path(value).stem.lower()
     text = re.sub(r"[^a-z0-9]+", "-", text)
     return text.strip("-")
 
 
 def find_similar_existing_doc(raw_file_path: str, audience_root: Path) -> Path | None:
-    """Find an existing docs file with a very similar concept slug."""
+    """Find an existing docs file with a similar conceptual slug.
+
+    This deterministic check is used to catch obviously redundant creations
+    before file writes happen.
+    """
     target_key = normalize_doc_key(raw_file_path)
     best_match: Path | None = None
     best_score = 0.0
@@ -190,7 +229,13 @@ def find_similar_existing_doc(raw_file_path: str, audience_root: Path) -> Path |
 
 
 def harden_actions_against_existing_docs(actions: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Reduce redundant create actions when similar docs already exist on disk."""
+    """Reduce redundant ``create`` actions using filesystem evidence.
+
+    Project implications:
+    - This function represents the project's preference for constrained LLM
+      automation: let the model reason, but verify easy duplication cases with
+      deterministic checks.
+    """
     hardened: list[dict[str, str]] = []
 
     for action in actions:
@@ -222,10 +267,11 @@ def harden_actions_against_existing_docs(actions: list[dict[str, str]]) -> list[
 
 
 def resolve_safe_docs_path(raw_path: str | None) -> Path | None:
-    """Resolve an LLM-provided path and ensure it stays inside docs/.
+    """Resolve an LLM-provided path and ensure it stays inside ``docs/``.
 
-    This accepts paths that do not exist yet and works correctly on Windows
-    and Unix-style path separators.
+    The model is allowed to propose new documentation files, but never outside
+    the project documentation tree. This function is the security boundary for
+    that rule.
     """
     if not raw_path:
         return None
@@ -247,16 +293,23 @@ def resolve_safe_docs_path(raw_path: str | None) -> Path | None:
 
 
 def main() -> None:
-    """Execute the documentation generation pipeline.
+    """Execute the full documentation generation pipeline.
 
     This function:
-    1. Validates configuration and API keys
-    2. Ensures schema exists
-    3. Detects code changes
-    4. Indexes existing documentation
-    5. Queries LLM for documentation actions
-    6. Executes the actions
-    7. Updates vector store
+    1. Ensures schema availability.
+    2. Loads persisted state and resolves the correct git diff base.
+    3. Detects relevant source-code changes.
+    4. Reads existing docs and retrieves semantic context.
+    5. Calls the LLM to decide documentation actions.
+    6. Applies deterministic hardening against redundant work.
+    7. Writes documentation changes to disk.
+    8. Refreshes the vector store and site-navigation indexes.
+
+    Project implications:
+    - This entry point is designed to be CI-safe, re-runnable, and conservative
+      about redundant documentation work.
+    - Persisted commit state makes the pipeline commit-aware rather than merely
+      workspace-aware, which is crucial for GitHub Actions.
     """
     print("[generate_docs] Starting automatic documentation pipeline")
 

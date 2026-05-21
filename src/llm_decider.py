@@ -1,8 +1,17 @@
-"""LLM decision module for determining documentation actions.
+"""LLM-facing decision layer for documentation planning.
 
-This module orchestrates communication with the LLM to decide what documentation
-actions (create, update, delete) are needed based on code changes and existing
-documentation context.
+This module turns repository context into an LLM prompt and turns the resulting
+response back into structured documentation actions. It does not write files by
+itself; instead, it provides the reasoning boundary between deterministic
+project inputs and downstream execution.
+
+Project implications:
+- Prompt wording here heavily influences whether the system prefers no-op,
+  update, or create behavior.
+- This is one of the highest-leverage modules in the project: small
+  instruction changes can shift documentation outcomes across every CI run.
+- Because the project relies on JSON-only responses, prompt clarity and parsing
+  robustness directly affect automation reliability.
 """
 
 from __future__ import annotations
