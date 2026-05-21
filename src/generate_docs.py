@@ -46,6 +46,7 @@ def get_docs_tree(base_path: Path, label: str) -> dict[str, str]:
 
 
 def main() -> None:
+    print("temp\n")
     print("[generate_docs] Starting read-only pipeline")
     schema = load_schema()
 
