@@ -1,0 +1,21 @@
+{
+  "name": "ia-project-docs-site",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prestart": "python ../src/docs_site_sync.py",
+    "start": "docusaurus start --host 0.0.0.0 --port 3000",
+    "prebuild": "python ../src/docs_site_sync.py",
+    "build": "docusaurus build",
+    "serve": "docusaurus serve",
+    "clear": "docusaurus clear"
+  },
+  "dependencies": {
+    "@docusaurus/core": "3.10.1",
+    "@docusaurus/preset-classic": "3.10.1",
+    "clsx": "^2.1.1",
+    "prism-react-renderer": "^2.4.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  }
+}

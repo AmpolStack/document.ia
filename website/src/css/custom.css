@@ -1,0 +1,16 @@
+:root {
+  --ifm-color-primary: #0f766e;
+  --ifm-color-primary-dark: #0c5f59;
+  --ifm-color-primary-darker: #0a564f;
+  --ifm-color-primary-darkest: #08453f;
+  --ifm-color-primary-light: #128e84;
+  --ifm-color-primary-lighter: #17a398;
+  --ifm-color-primary-lightest: #35b8ae;
+  --ifm-background-color: #f7f7f2;
+  --ifm-font-color-base: #1f2937;
+  --ifm-code-font-size: 95%;
+}
+
+.navbar {
+  border-bottom: 1px solid rgba(15, 118, 110, 0.12);
+}
