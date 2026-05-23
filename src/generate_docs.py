@@ -106,6 +106,14 @@ def get_docs_tree(base_path: Path, label: str) -> dict[str, str]:
     return tree
 
 
+def build_docs_inventory(docs_tree: dict[str, str]) -> str:
+    """Build a compact inventory string for the LLM prompt."""
+    if not docs_tree:
+        return ""
+    sorted_files = sorted(docs_tree.keys())
+    return "\n".join(sorted_files)
+
+
 def main() -> None:
     """Execute the documentation generation pipeline.
 
@@ -142,14 +150,27 @@ def main() -> None:
     dev_context = query_relevant_context(diff_text, audience="dev")
     user_context = query_relevant_context(diff_text, audience="user")
 
+    dev_docs_tree = get_docs_tree(DEV_DOC_PATH, "developer")
+    user_docs_tree = get_docs_tree(USER_DOC_PATH, "user")
+    dev_docs_inventory = build_docs_inventory(dev_docs_tree)
+    user_docs_inventory = build_docs_inventory(user_docs_tree)
+
     print("[generate_docs] Summary:")
     print(f"  - Files modified: {len(changes)}")
     print(f"  - Dev context: {len(dev_context)} characters")
     print(f"  - User context: {len(user_context)} characters")
+    print(f"  - Dev docs inventory: {len(dev_docs_tree)} files")
+    print(f"  - User docs inventory: {len(user_docs_tree)} files")
 
     # Decide actions with LLM
     try:
-        actions = decide_actions(diff_text, dev_context, user_context)
+        actions = decide_actions(
+            diff_text,
+            dev_context,
+            user_context,
+            dev_docs_inventory,
+            user_docs_inventory,
+        )
     except json.JSONDecodeError as e:
         print(f"[generate_docs] LLM returned invalid JSON: {e}")
         sys.exit(0)

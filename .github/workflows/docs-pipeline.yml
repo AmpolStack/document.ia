@@ -5,11 +5,6 @@ on:
   push:
     branches: [master]
     paths: ['src/**']
-  workflow_dispatch:
-
-concurrency:
-  group: auto-documentation-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   generate-docs:
@@ -55,22 +50,9 @@ jobs:
         run: |
           git config user.name "docs-bot"
           git config user.email "docs-bot@github-actions"
-          if git ls-remote --exit-code --heads origin docs/ia; then
-            git fetch origin docs/ia
-            git checkout -B docs/ia origin/docs/ia
-          else
-            echo "La rama docs/ia no existe aún. Se creará en esta ejecución."
-            git checkout -B docs/ia
-            git push --set-upstream origin docs/ia
-          fi
-
+          git fetch origin docs/ia || true
+          git checkout docs/ia 2>/dev/null || git checkout -b docs/ia
           git add docs/
-          if git diff --staged --quiet; then
-            echo "Sin cambios en docs."
-            exit 0
-          fi
-
+          git diff --staged --quiet && echo "Sin cambios en docs." && exit 0
           git commit -m "docs: auto-update desde ${{ github.sha }}"
-          git fetch origin docs/ia
-          git rebase origin/docs/ia
           git push origin docs/ia
