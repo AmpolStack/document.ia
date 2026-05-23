@@ -20,31 +20,10 @@ Coordina el flujo completo del proyecto:
 
 **Implicaciones para el proyecto:**
 - Este archivo es el corazón operativo. La mayoría de las preguntas "¿por qué el bot documentó esto?" se remontan a decisiones tomadas aquí.
-- El módulo mezcla intencionadamente comprobaciones deterministas con juicio del LLM para que el sistema siga siendo flexible sin volverse completamente no restringido.
-- Los cambios aquí afectan costo, comportamiento de duplicación, seguridad en CI y la experiencia de revisión de desarrolladores en la rama de documentación dedicada.
+
+---
 
 ## Funciones públicas
-
-### `load_schema()`
-
-Carga y parsea el esquema de documentación del proyecto.
-
-- **Retorna:** `dict` – configuración del esquema.
-- **Errores:** Lanza `FileNotFoundError` si `schema.yml` no existe.
-
-### `load_pipeline_state()`
-
-Carga el estado persistido del pipeline desde disco.
-
-- **Retorna:** `dict` – estado actual (contiene el último commit procesado).
-
-### `save_pipeline_state(state)`
-
-Persiste el estado del pipeline en disco para futuras ejecuciones.
-
-### `ensure_schema()`
-
-Asegura que exista `schema.yml`, creando uno por defecto si es necesario.
 
 ### `get_docs_tree(base_path, label)`
 
@@ -55,13 +34,14 @@ Lee todos los archivos markdown bajo un directorio raíz de documentación.
   - `label` (str): Etiqueta legible para registros.
 - **Retorna:** `dict[str, str]` – mapeo de ruta a contenido.
 
-### `build_docs_inventory(tree)`
+### `build_docs_inventory(docs_tree)`
 
-Construye un inventario compacto de documentos existentes para el LLM.
+Construye un inventario compacto de documentos existentes para el LLM. Esta función se introdujo para mejorar la conciencia contextual del LLM sobre qué documentación ya existe, reduciendo acciones redundantes.
 
 - **Argumentos:**
-  - `tree` (dict): Árbol de documentos.
-- **Retorna:** `str` – texto resumido.
+  - `docs_tree` (dict[str, str]): Árbol de documentos obtenido de `get_docs_tree`.
+- **Retorna:** `str` – texto resumido con las rutas de los archivos ordenadas alfabéticamente.
+- **Comportamiento:** Devuelve una cadena vacía si el árbol está vacío.
 
 ### `normalize_doc_key(value)`
 
@@ -75,14 +55,27 @@ Encuentra un archivo de documentación existente con un slug conceptual similar.
 
 Reduce acciones `create` redundantes usando evidencia del sistema de archivos.
 
-### `resolve_safe_docs_path(raw_path)`
-
-Resuelve una ruta proporcionada por el LLM y asegura que permanezca dentro de `docs/`.
-
-- **Argumentos:**
-  - `raw_path` (Optional[str]): Ruta sin verificar.
-- **Retorna:** `Optional[Path]` – ruta segura resuelta, o `None`.
-
 ### `main()`
 
-Ejecuta el pipeline completo de generación de documentación.
+Ejecuta el pipeline de generación de documentación. Desde la versión actual, realiza los siguientes pasos adicionales:
+1. Obtiene los árboles de documentación existentes para desarrollador y usuario mediante `get_docs_tree`.
+2. Construye inventarios compactos con `build_docs_inventory`.
+3. Imprime el resumen de archivos encontrados.
+4. Pasa estos inventarios a `decide_actions` para que el LLM tenga conciencia de la documentación existente.
+
+**Cambios recientes:**
+- Se agregó la construcción de inventarios (`dev_docs_inventory`, `user_docs_inventory`) y su uso en el llamado a `decide_actions`.
+- La función `decide_actions` ahora acepta dos parámetros adicionales: `dev_docs_inventory` y `user_docs_inventory`.
+
+---
+
+## Funciones internas
+
+No hay funciones internas nuevas en este cambio.
+
+---
+
+## Relacionados
+
+- `decide_actions` en `modules/llm-decider.md`
+- `get_docs_tree`
