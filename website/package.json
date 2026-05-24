@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "prestart": "python ../src/docs_site_sync.py",
+    "prestart": "python ../src/docs/sync.py",
     "start": "docusaurus start --host 0.0.0.0 --port 3000",
-    "prebuild": "python ../src/docs_site_sync.py",
+    "prebuild": "python ../src/docs/sync.py",
     "build": "docusaurus build",
     "serve": "docusaurus serve",
     "clear": "docusaurus clear"
