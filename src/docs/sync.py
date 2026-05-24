@@ -2,20 +2,15 @@
 
 This module maintains landing pages under ``docs/`` so the generated markdown
 is usable both in-repo and in site generators such as Docusaurus.
-
-Project implications:
-- Documentation quality in this project is not only about content, but also
-  about browseability for reviewers and end users.
-- Generated landing pages create a second layer of derived docs that must stay
-  consistent with the primary markdown pages.
-- Because these pages may also be indexed into the vector store, navigation and
-  retrieval behavior are indirectly connected.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Iterable
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 DOCS_ROOT = Path.cwd() / "docs"
@@ -178,11 +173,11 @@ def sync_docs_site_indexes() -> list[Path]:
             index_path.parent.mkdir(parents=True, exist_ok=True)
             index_path.write_text(content, encoding="utf-8")
             updated_paths.append(index_path)
-            print(f"[docs_site_sync] Updated index: {index_path}")
+            logger.info(f"Updated index: {index_path}")
 
     return updated_paths
 
 
 if __name__ == "__main__":
     updated = sync_docs_site_indexes()
-    print(f"[docs_site_sync] Total index files updated: {len(updated)}")
+    logger.info(f"Total index files updated: {len(updated)}")

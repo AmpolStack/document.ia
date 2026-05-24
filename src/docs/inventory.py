@@ -1,22 +1,20 @@
+"""Inventory of existing documentation files."""
+
 from pathlib import Path
 import logging
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-    # datefmt="%Y-%m-%d %H:%M:%S"
-)
+
 
 def get_inventory(base_path: Path, label: str) -> dict[str, str]:
     """Collect all markdown files from a documentation directory.
 
     Args:
-        base_path: Root directory path for documentation
-        label: Human-readable label for the documentation type
+        base_path: Root directory path for documentation.
+        label: Human-readable label for the documentation type.
 
     Returns:
-        Dictionary mapping file paths to file contents
+        Dictionary mapping file paths to file contents.
     """
     logger.info(f"Reading {label} documentation from {base_path}")
 
@@ -34,7 +32,11 @@ def get_inventory(base_path: Path, label: str) -> dict[str, str]:
 
 
 def compact_inventory(docs_tree: dict[str, str]) -> str:
-    """Build a compact inventory string for the LLM prompt."""
+    """Build a compact inventory string for the LLM prompt.
+
+    Returns only file paths sorted alphabetically — the LLM uses this
+    to know which files already exist before deciding to create new ones.
+    """
     if not docs_tree:
         return ""
     sorted_files = sorted(docs_tree.keys())
@@ -42,14 +44,9 @@ def compact_inventory(docs_tree: dict[str, str]) -> str:
 
 
 if __name__ == "__main__":
-    logger.info("=== Testing documentation_inventory_manager.py ===")
-    # Example usage
     logger.info("Developer Docs Inventory:")
-    dev_inventory = get_inventory(Path("docs/dev"), "Developer")
-    dev_compact_inventory = compact_inventory(dev_inventory)
-    logger.info(dev_compact_inventory)
-  
+    dev_inventory = get_inventory(Path("../../docs/dev"), "Developer")
+    logger.info(compact_inventory(dev_inventory))
     logger.info("User Docs Inventory:")
     user_inventory = get_inventory(Path("docs/user"), "User")
-    user_compact_inventory = compact_inventory(user_inventory)
-    logger.info(user_compact_inventory)
+    logger.info(compact_inventory(user_inventory))
