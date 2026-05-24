@@ -1,6 +1,7 @@
 """Execute LLM-decided actions on the filesystem."""
 
 import logging
+import os
 from pathlib import Path
 from typing import List
 
@@ -27,7 +28,8 @@ def execute_actions(actions: List[dict]) -> List[str]:
         content = action.get("content", "")
 
         # Security: prevent writing outside docs/
-        if not str(file_path).startswith("docs/"):
+        normalized = os.path.normpath(str(file_path)).replace("\\", "/")
+        if not normalized.startswith("docs/"):
             logger.warning("Unsafe path ignored: %s", file_path)
             continue
 

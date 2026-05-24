@@ -17,11 +17,17 @@ def call_llm(prompt: str) -> str:
 
 
 def parse_llm_response(raw: str) -> List[Dict[str, Any]]:
-    """Extract and parse the JSON actions block from an LLM response."""
+    """Extract and parse the JSON actions block from an LLM response.
+
+    Strips markdown escaping (\\_, \\*, etc.) from JSON string values
+    since the LLM often generates these and they are invalid in JSON.
+    """
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     if not match:
         raise ValueError("No JSON found in LLM response")
-    data = json.loads(match.group(0))
+    text = match.group(0)
+    text = re.sub(r'\\(?=[_*\[\]()])', '', text)
+    data = json.loads(text)
     return data.get("actions", [])
 
 
