@@ -36,8 +36,7 @@ LLM_API_KEY = os.getenv("LLM_API_KEY", "").strip()
 LLM_BASE_URL = "https://api.deepseek.com"
 LLM_MODEL = "deepseek-v4-flash"
 LLM_TEMPERATURE = 0.1
-LLM_MAX_TOKENS = 10000
-
+LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "10000"))
 
 DOCS_ROOT = ROOT / "docs"
 DOC_EXISTING_SIMILARITY_THRESHOLD = 0.72

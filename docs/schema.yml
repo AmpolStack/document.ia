@@ -44,165 +44,81 @@ site_conventions:
     - "No crear páginas huérfanas"
 
 audiences:
-  dev:
-    path: docs/dev/
-    profile: "Desarrollador. Busca precisión técnica. Consulta puntualmente."
-    sections:
-      tutorials:  "Guía de inicio guiado. El lector nunca ha tocado el proyecto."
-      how-to:     "Tareas específicas. Asume conocimiento base. Directo al punto."
-      reference:  "Firmas, parámetros, tipos, errores. Se consulta, no se lee."
-      explanation: "Decisiones de arquitectura y contexto del por qué."
-    symbol_policy:
-      public:
-        definition:
-          - "Se considera público todo símbolo destinado a ser consumido por otros módulos, por integraciones, o por usuarios desarrolladores."
-          - "Por defecto, funciones, clases y métodos sin prefijo '_' se consideran públicos."
-          - "También se consideran públicos los símbolos exportados explícitamente, usados como puntos de entrada o referenciados por la pipeline principal."
-        documentation_requirements:
-          - "Todo símbolo público nuevo o modificado debe quedar documentado."
-          - "Cada clase pública debe tener su propia entrada de referencia."
-          - "Cada función pública debe quedar documentada en la referencia del módulo o en una entrada propia si su complejidad lo justifica."
-          - "Cada método público relevante debe documentarse dentro de la entrada de su clase."
-        target_paths:
-          module_reference: "docs/dev/reference/public/modules/"
-          class_reference: "docs/dev/reference/public/classes/"
-          function_reference: "docs/dev/reference/public/functions/"
-      internal:
-        definition:
-          - "Se considera interno todo símbolo auxiliar, privado o de soporte que no forma parte de la interfaz esperada para otros consumidores."
-          - "Por defecto, funciones, clases y métodos con prefijo '_' se consideran internos."
-          - "También se consideran internos helpers, adaptadores locales y utilidades usadas solo dentro del módulo."
-        documentation_requirements:
-          - "Todo símbolo interno nuevo o modificado debe evaluarse para documentación."
-          - "Los símbolos internos importantes para mantenimiento, depuración o arquitectura deben documentarse."
-          - "Los símbolos internos triviales o autoexplicativos pueden resumirse en una sección agrupada, no necesariamente en un archivo individual."
-          - "Las decisiones internas con impacto arquitectónico deben aparecer además en explanation/."
-        target_paths:
-          module_reference: "docs/dev/reference/internal/modules/"
-          class_reference: "docs/dev/reference/internal/classes/"
-          function_reference: "docs/dev/reference/internal/functions/"
-
-  user:
-    path: docs/user/
-    profile: "Usuario final. Sin jerga técnica. Orientado a lo que puede hacer."
-    sections:
-      tutorials:  "Onboarding. Primera experiencia con el producto."
-      how-to:     "Cómo completar una tarea específica."
-      reference:  "Glosario y términos del dominio."
-      explanation: "Cómo funciona algo del producto, sin tecnicismos."
+  description: "Las audiencias se definen dinámicamente en la configuración del pipeline (src/config/models.py). Cada audiencia tiene un label, un path, un similarity_threshold y un reason que indica al LLM cuándo usarla. Las audiencias actuales se proporcionan en el bloque AUDIENCES del prompt."
+  per_audience_structure:
+    - "Cada audiencia debe tener una carpeta raíz bajo docs/ con su propio index.md"
+    - "Usar subcarpetas semánticas (reference/, how-to/, explanation/, tutorials/) según aplique"
+    - "La documentación técnica (símbolos públicos/internos) debe separarse en reference/public/ y reference/internal/ dentro de la carpeta de la audiencia técnica correspondiente"
 
 decision_rules:
   - "Si el cambio es refactor interno sin cambio de comportamiento → no documentar"
-  - "Si cambia una firma, endpoint o configuración → actualizar reference/ de dev"
-  - "Si se agrega una feature visible → actualizar how-to/ de ambas audiencias"
-  - "Si cambia arquitectura → actualizar explanation/ de dev"
-  - "Documentar exhaustivamente todos los símbolos públicos nuevos o modificados en docs/dev/reference/public/"
-  - "Documentar los símbolos internos nuevos o modificados cuando sean relevantes para mantenimiento, depuración, operación o arquitectura, usando docs/dev/reference/internal/"
+  - "Si cambia una firma, endpoint o configuración → actualizar reference/ de la audiencia técnica"
+  - "Si se agrega una feature visible → actualizar how-to/ de las audiencias que apliquen"
+  - "Si cambia arquitectura → actualizar explanation/ de la audiencia técnica"
+  - "Documentar exhaustivamente todos los símbolos públicos nuevos o modificados en reference/public/ de la audiencia técnica"
+  - "Documentar los símbolos internos nuevos o modificados cuando sean relevantes para mantenimiento, depuración, operación o arquitectura, en reference/internal/"
   - "Separar siempre la documentación técnica de símbolos públicos e internos"
   - "Crear una entrada de referencia por clase pública nueva o modificada"
   - "Crear o actualizar documentación de funciones públicas nuevas o modificadas, aunque no tengan clase asociada"
   - "Si un módulo contiene varios símbolos internos menores, se permite una única página de referencia interna agrupada por módulo"
   - "Actualizar solo las secciones afectadas cuando ya existan, pero crear nuevas entradas por símbolo cuando falten"
   - "Si el archivo no existe → crearlo. Nombre en kebab-case descriptivo de la acción o concepto"
-  - "Si se crea un archivo nuevo → actualizar el README.md índice de esa audiencia"
-  - "Si se crea o actualiza documentación de símbolos, actualizar los README.md índice para distinguir explícitamente entre public e internal"
+  - "Si se crea un archivo nuevo → actualizar el index.md índice de esa audiencia"
+  - "Si se crea o actualiza documentación de símbolos, actualizar los index.md índice para distinguir explícitamente entre public e internal"
   - "No omitir un símbolo público nuevo o modificado por razones de brevedad si hay contexto suficiente para describirlo"
   - "Toda documentación creada debe ser compatible con navegación en un generador de sitios estáticos"
   - "Toda carpeta estructural debe tener una página índice navegable"
   - "Todo documento nuevo debe incluir frontmatter mínimo para integrarse en sidebars"
   - "Cuando se creen varias páginas hermanas, asignar sidebar_position de forma consistente"
   - "Toda la documentación humana debe escribirse en español"
-  - "La home global de docs y los indices de carpetas deben mantenerse actualizados conforme cambie la documentación"
-
-naming:
-  dev: "reference/public/modules → module-name.md | reference/public/classes → class-name.md | reference/public/functions → function-name.md | reference/internal/modules → module-name.md | reference/internal/classes → class-name.md | reference/internal/functions → function-name.md | how-to → how-to-verb-noun.md | explanation → concept.md | landing pages → index.md"
-  user: "how-to → how-to-verb-noun.md | explanation → concept.md"
+  - "La home global de docs y los índices de carpetas deben mantenerse actualizados conforme cambie la documentación"
 
 reference_templates:
-  dev:
-    public_class:
-      frontmatter:
-        title: "Human readable class name"
-        description: "Short summary of the class responsibility"
-        sidebar_position: 1
-      required_sections:
-        - "Overview"
-        - "Constructor"
-        - "Public Methods"
-        - "Parameters"
-        - "Returns"
-        - "Raised Errors"
-        - "Usage Example"
-        - "Related Symbols"
-    public_function:
-      frontmatter:
-        title: "Human readable function name"
-        description: "Short summary of the function purpose"
-        sidebar_position: 1
-      required_sections:
-        - "Overview"
-        - "Signature"
-        - "Parameters"
-        - "Returns"
-        - "Raised Errors"
-        - "Usage Example"
-        - "Related Symbols"
-    internal_symbol:
-      frontmatter:
-        title: "Human readable internal symbol name"
-        description: "Short summary of the internal symbol purpose"
-        sidebar_position: 1
-      required_sections:
-        - "Purpose"
-        - "Internal Flow"
-        - "Inputs and Outputs"
-        - "Side Effects"
-        - "Maintenance Notes"
-        - "Related Symbols"
-    landing_page:
-      frontmatter:
-        title: "Section title"
-        description: "Landing page summary for this documentation category"
-        sidebar_position: 1
-      required_sections:
-        - "Overview"
-        - "Contents"
-        - "When to Read This Section"
-
-indexing_rules:
-  dev:
-    readme_structure:
-      - "Public Reference"
-      - "Internal Reference"
-      - "How-to"
-      - "Explanation"
-    requirements:
-      - "Todo README.md de dev debe separar enlaces a símbolos públicos e internos"
-      - "Los archivos nuevos deben añadirse a la sección correcta del índice"
-      - "Los índices deben actuar como landing pages aptas para Docusaurus"
-      - "Las carpetas reference/public, reference/internal, how-to y explanation deben tener index.md"
-
-site_structure:
-  dev:
-    root: "docs/dev/"
-    required_paths:
-      - "docs/dev/index.md"
-      - "docs/dev/reference/index.md"
-      - "docs/dev/reference/public/index.md"
-      - "docs/dev/reference/public/modules/index.md"
-      - "docs/dev/reference/public/classes/index.md"
-      - "docs/dev/reference/public/functions/index.md"
-      - "docs/dev/reference/internal/index.md"
-      - "docs/dev/reference/internal/modules/index.md"
-      - "docs/dev/reference/internal/classes/index.md"
-      - "docs/dev/reference/internal/functions/index.md"
-      - "docs/dev/how-to/index.md"
-      - "docs/dev/explanation/index.md"
-  user:
-    root: "docs/user/"
-    required_paths:
-      - "docs/user/index.md"
-      - "docs/user/tutorials/index.md"
-      - "docs/user/how-to/index.md"
-      - "docs/user/reference/index.md"
-      - "docs/user/explanation/index.md"
+  public_class:
+    frontmatter:
+      title: "Human readable class name"
+      description: "Short summary of the class responsibility"
+      sidebar_position: 1
+    required_sections:
+      - "Overview"
+      - "Constructor"
+      - "Public Methods"
+      - "Parameters"
+      - "Returns"
+      - "Raised Errors"
+      - "Usage Example"
+      - "Related Symbols"
+  public_function:
+    frontmatter:
+      title: "Human readable function name"
+      description: "Short summary of the function purpose"
+      sidebar_position: 1
+    required_sections:
+      - "Overview"
+      - "Signature"
+      - "Parameters"
+      - "Returns"
+      - "Raised Errors"
+      - "Usage Example"
+      - "Related Symbols"
+  internal_symbol:
+    frontmatter:
+      title: "Human readable internal symbol name"
+      description: "Short summary of the internal symbol purpose"
+      sidebar_position: 1
+    required_sections:
+      - "Purpose"
+      - "Internal Flow"
+      - "Inputs and Outputs"
+      - "Side Effects"
+      - "Maintenance Notes"
+      - "Related Symbols"
+  landing_page:
+    frontmatter:
+      title: "Section title"
+      description: "Landing page summary for this documentation category"
+      sidebar_position: 1
+    required_sections:
+      - "Overview"
+      - "Contents"
+      - "When to Read This Section"
