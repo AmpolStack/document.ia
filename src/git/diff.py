@@ -4,12 +4,6 @@ This module converts repository history into a prompt-friendly representation
 that the rest of the pipeline can reason about. It focuses on ``src/`` because
 the project treats source-code changes as the trigger for documentation
 updates.
-
-Project implications:
-- The selected commit range defines what the bot believes is "new work".
-- The shape and size of the generated diff strongly influence LLM quality.
-- Because this layer is text-based and language-agnostic, it is simple and
-  robust, but it cannot infer semantics beyond what the diff exposes.
 """
 
 from __future__ import annotations
@@ -18,6 +12,9 @@ import re
 import subprocess
 from pathlib import Path
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 from src.config import DEFAULT_GIT_BASE_REF, DIFF_MAX_LINES_PER_FILE, FileChange
 
@@ -41,15 +38,9 @@ def get_structured_diff(
 
     Raises:
         RuntimeError: If the git command fails.
-
-    Project implications:
-    - This function defines the exact change slice the documentation system
-      sees.
-    - If the base ref is wrong, the project can re-document old commits or
-      miss documentation for new ones.
     """
     diff_path = str(Path(path))
-    print(f"[diff_parser] Running git diff {base_ref}..{target_ref} -- {diff_path}")
+    logger.info(f"Running git diff {base_ref}..{target_ref} -- {diff_path}")
 
     result = subprocess.run(
         ["git", "diff", base_ref, target_ref, "--unified=5", "--", diff_path],
@@ -59,31 +50,26 @@ def get_structured_diff(
     )
 
     if result.returncode != 0:
-        print("[diff_parser] Error running git diff command.")
+        logger.error("Error running git diff command.")
         raise RuntimeError(result.stderr or "git diff failed")
 
     raw = result.stdout
     if not raw.strip():
-        print("[diff_parser] No changes detected.")
+        logger.info("No changes detected.")
         return []
 
-    print(f"[diff_parser] Raw diff lines: {len(raw.splitlines())}")
-    print("[diff_parser] Raw diff output:")
-    print(raw)
-    print("[diff_parser] End raw diff output")
+    logger.info(f"Raw diff lines: {len(raw.splitlines())}")
+    logger.info("Raw diff output:")
+    logger.info(raw)
+    logger.info("End raw diff output")
 
     changes = _parse_diff(raw)
-    print(f"[diff_parser] Parsed {len(changes)} changed file(s)")
+    logger.info(f"Parsed {len(changes)} changed file(s)")
     return changes
 
 
 def get_current_head() -> str:
-    """Return the current repository ``HEAD`` commit hash.
-
-    Project implications:
-    - The pipeline stores this value to avoid reprocessing the same commit on
-      subsequent runs.
-    """
+    """Return the current repository ``HEAD`` commit hash."""
     result = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         capture_output=True,
@@ -99,15 +85,10 @@ def resolve_diff_base(last_processed_commit: Optional[str]) -> Optional[str]:
     """Resolve the appropriate git base for the next documentation run.
 
     Returns ``None`` when the current ``HEAD`` was already processed.
-
-    Project implications:
-    - This is a key safeguard against redundant documentation generation.
-    - If the persisted state becomes stale or corrupted, the project may skip
-      necessary work or re-run historical work.
     """
     current_head = get_current_head()
     if last_processed_commit and last_processed_commit == current_head:
-        print(f"[diff_parser] HEAD {current_head} was already processed.")
+        logger.info(f"HEAD {current_head} was already processed.")
         return None
     if last_processed_commit:
         return last_processed_commit
@@ -115,14 +96,7 @@ def resolve_diff_base(last_processed_commit: Optional[str]) -> Optional[str]:
 
 
 def _parse_diff(raw: str) -> list[FileChange]:
-    """Parse raw ``git diff`` output into ``FileChange`` records.
-
-    Args:
-        raw: Exact stdout emitted by the git diff command.
-
-    Returns:
-        List of parsed ``FileChange`` objects.
-    """
+    """Parse raw ``git diff`` output into ``FileChange`` records."""
     changes: list[FileChange] = []
     current_file = None
     current_hunks: list[str] = []
@@ -163,17 +137,7 @@ def _build_change(
     removed: list[str],
     hunks: list[str],
 ) -> FileChange:
-    """Create a normalized ``FileChange`` object from raw diff fragments.
-
-    Args:
-        filename: Repository-relative filename from the diff header.
-        added: Added lines stripped of their leading diff marker.
-        removed: Removed lines stripped of their leading diff marker.
-        hunks: Raw diff lines preserved in order.
-
-    Returns:
-        A populated ``FileChange`` value ready for prompt formatting.
-    """
+    """Create a normalized ``FileChange`` object from raw diff fragments."""
     parts: list[str] = []
     if added:
         parts.append(f"{len(added)} added")
@@ -188,11 +152,11 @@ def _build_change(
         change_summary=f"{filename}: {', '.join(parts) or 'no net changes'}",
     )
 
-    print(f"[diff_parser] Parsed file change: {change.change_summary}")
+    logger.info(f"Parsed file change: {change.change_summary}")
     if added:
-        print(f"              Added ({len(added)}): {added[:5]}{'...' if len(added) > 5 else ''}")
+        logger.info(f"              Added ({len(added)}): {added[:5]}{'...' if len(added) > 5 else ''}")
     if removed:
-        print(f"              Removed ({len(removed)}): {removed[:5]}{'...' if len(removed) > 5 else ''}")
+        logger.info(f"              Removed ({len(removed)}): {removed[:5]}{'...' if len(removed) > 5 else ''}")
     return change
 
 
@@ -205,15 +169,6 @@ def format_diff_for_prompt(
     Args:
         changes: Structured file changes to serialize.
         max_lines_per_file: Maximum number of raw diff lines retained per file.
-
-    Returns:
-        Prompt-friendly markdown string.
-
-    Project implications:
-    - This is the last deterministic step before LLM reasoning.
-    - The line budget is a direct trade-off between completeness and token
-      efficiency, which affects whether the model can recognize existing docs
-      coverage.
     """
     parts: list[str] = []
     for change in changes:
@@ -222,18 +177,17 @@ def format_diff_for_prompt(
         parts.append(formatted_part)
 
     formatted = "\n\n".join(parts)
-    print(f"[diff_parser] Diff formatted for prompt ({len(formatted)} characters)")
+    logger.info(f"Diff formatted for prompt ({len(formatted)} characters)")
     return formatted
 
 
 if __name__ == "__main__":
-    print("=== Testing diff_parser.py ===\n")
+    logger.info("=== Testing diff_parser.py ===")
     changes = get_structured_diff()
 
     if not changes:
-        print("No changes detected. Ensure you have at least 2 commits with changes in src/")
+        logger.info("No changes detected. Ensure you have at least 2 commits with changes in src/")
     else:
-        print(f"\n=== SUMMARY: {len(changes)} file(s) modified ===")
+        logger.info(f"\n=== SUMMARY: {len(changes)} file(s) modified ===")
         for c in changes:
-            print(f"  - {c.change_summary}")
-
+            logger.info(f"  - {c.change_summary}")
