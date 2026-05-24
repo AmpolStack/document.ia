@@ -107,12 +107,28 @@ The generated documentation is published as a static website built with **Docusa
 │   ├── user/            #   End-user documentation
 │   └── schema.yml       #   Style and rules schema
 ├── src/                 # Pipeline source code
-│   ├── generate_docs.py #   Main orchestrator
-│   ├── diff_parser.py   #   Git change extraction
-│   ├── rag_manager.py   #   RAG indexing and querying
-│   ├── llm_decider.py   #   LLM prompt and decision
-│   ├── docs_site_sync.py#   Site index synchronization
-│   └── config.py        #   Centralized configuration
+│   ├── __main__.py      #   Entry point
+│   ├── _logging.py      #   Logging configuration
+│   ├── config/          #   Centralized configuration
+│   │   ├── models.py    #     Pydantic models
+│   │   └── settings.py  #     Settings loading
+│   ├── docs/            #   Documentation file operations
+│   │   ├── inventory.py #     File discovery
+│   │   ├── schema.py    #     Schema loading
+│   │   └── sync.py      #     Index synchronization
+│   ├── git/             #   Git change extraction
+│   │   └── diff.py      #     Diff parsing
+│   ├── llm/             #   LLM interaction
+│   │   ├── client.py    #     API call + JSON cleaning
+│   │   └── prompt.py    #     Prompt building
+│   ├── pipeline/        #   Orchestration
+│   │   ├── executor.py  #     Action execution
+│   │   └── orchestrator.py #  Main orchestrator
+│   └── rag/             #   RAG indexing & querying
+│       ├── chunker.py   #     Text chunking
+│       ├── indexer.py   #     Vector store indexing
+│       ├── retriever.py #     Similarity search
+│       └── setup.py     #     Embedding model init
 ├── vector_store/        # Persistent semantic index (ChromaDB)
 ├── website/             # Docusaurus site
 └── requirements.txt
@@ -130,6 +146,16 @@ You can integrate this pipeline into any code repository by following these step
 5. **Adjust `src/config.py`** to point to the correct paths for your source code and documentation directory.
 
 Once done, the pipeline will run automatically on every push to `master` that modifies files in `src/`, generating and updating documentation without manual intervention.
+
+---
+
+### Changelog
+
+#### 2026-05-24
+
+- **`src/llm/client.py`** — Added `_clean_json_text()` that strips invalid JSON escapes from LLM output (markdown escapes like `\_`, `\-`, `\#`, `` \` ``, and line continuations `\<newline>`). Prevents `Invalid \escape` errors from `json.loads` when the LLM escapes markdown characters inside JSON string values.
+- **`src/pipeline/executor.py`** — Added path normalization with `os.path.normpath()` so the `startswith("docs/")` security check works correctly on Windows.
+- **`src/docs/sync.py`** — Moved `logging.basicConfig()` before `logger` creation so the format configuration applies globally.
 
 ---
 
@@ -211,12 +237,28 @@ La documentación generada se publica como un sitio web estático construido con
 │   ├── user/            #   Documentación para usuarios finales
 │   └── schema.yml       #   Esquema de estilo y reglas
 ├── src/                 # Código fuente del pipeline
-│   ├── generate_docs.py #   Orquestador principal
-│   ├── diff_parser.py   #   Extracción de cambios git
-│   ├── rag_manager.py   #   Indexado y consulta RAG
-│   ├── llm_decider.py   #   Prompt y decisión con LLM
-│   ├── docs_site_sync.py#   Sincronización de índices del sitio
-│   └── config.py        #   Configuración centralizada
+│   ├── __main__.py      #   Punto de entrada
+│   ├── _logging.py      #   Configuración de logging
+│   ├── config/          #   Configuración centralizada
+│   │   ├── models.py    #     Modelos Pydantic
+│   │   └── settings.py  #     Carga de configuraciones
+│   ├── docs/            #   Operaciones con archivos de documentación
+│   │   ├── inventory.py #     Descubrimiento de archivos
+│   │   ├── schema.py    #     Carga del schema
+│   │   └── sync.py      #     Sincronización de índices
+│   ├── git/             #   Extracción de cambios git
+│   │   └── diff.py      #     Parseo de diffs
+│   ├── llm/             #   Interacción con LLM
+│   │   ├── client.py    #     Llamada API + limpieza JSON
+│   │   └── prompt.py    #     Construcción de prompts
+│   ├── pipeline/        #   Orquestación
+│   │   ├── executor.py  #     Ejecución de acciones
+│   │   └── orchestrator.py #  Orquestador principal
+│   └── rag/             #   Indexado y consulta RAG
+│       ├── chunker.py   #     Fragmentación de texto
+│       ├── indexer.py   #     Indexado en vector store
+│       ├── retriever.py #     Búsqueda por similitud
+│       └── setup.py     #     Inicialización del modelo de embeddings
 ├── vector_store/        # Índice semántico persistente (ChromaDB)
 ├── website/             # Sitio Docusaurus
 └── requirements.txt
@@ -234,3 +276,13 @@ Puedes integrar este pipeline en cualquier repositorio de código siguiendo esto
 5. **Ajusta `src/config.py`** para que apunte a las rutas correctas de tu código fuente y directorio de documentación.
 
 Una vez hecho esto, el pipeline se ejecutará automáticamente en cada push a `master` que modifique archivos en `src/`, generando y actualizando la documentación sin intervención manual.
+
+---
+
+### Changelog
+
+#### 2026-05-24
+
+- **`src/llm/client.py`** — Añadida `_clean_json_text()` que elimina escapes inválidos de JSON generados por el LLM (escapes de markdown como `\_`, `\-`, `\#`, `` \` ``, y continuaciones de línea `\<newline>`). Previene errores `Invalid \escape` de `json.loads` cuando el LLM escapa caracteres markdown dentro de valores string.
+- **`src/pipeline/executor.py`** — Añadida normalización de rutas con `os.path.normpath()` para que la comprobación de seguridad `startswith("docs/")` funcione correctamente en Windows.
+- **`src/docs/sync.py`** — Movido `logging.basicConfig()` antes de la creación del `logger` para que la configuración se aplique globalmente.
