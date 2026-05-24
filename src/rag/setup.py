@@ -30,7 +30,7 @@ def configure() -> None:
     """Configure LlamaIndex runtime settings.
 
     Must be called once before using any RAG functionality.
-    Raises ValueError if DEEPSEEK_API_KEY is not set.
+    Raises ValueError if LLM_API_KEY is not set.
     """
     if not LLM_API_KEY:
         raise ValueError(

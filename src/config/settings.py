@@ -8,7 +8,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-
+load_dotenv()
 
 ROOT = Path.cwd()
 
@@ -32,7 +32,7 @@ RAG_TOP_K = 3
 RAG_SCORE_THRESHOLD = 0.15
 
 # llm client settings
-LLM_API_KEY = os.getenv("DEEPSEEK_API_KEY", "").strip()
+LLM_API_KEY = os.getenv("LLM_API_KEY", "").strip()
 LLM_BASE_URL = "https://api.deepseek.com"
 LLM_MODEL = "deepseek-v4-flash"
 LLM_TEMPERATURE = 0.1
