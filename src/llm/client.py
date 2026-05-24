@@ -16,17 +16,43 @@ def call_llm(prompt: str) -> str:
     return response.text
 
 
+def _clean_json_text(text: str) -> str:
+    result = []
+    i = 0
+    while i < len(text):
+        if text[i] != '\\':
+            result.append(text[i])
+            i += 1
+            continue
+        if i + 1 >= len(text):
+            result.append(text[i])
+            i += 1
+            continue
+        nxt = text[i + 1]
+        if nxt in {'"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'}:
+            result.append(text[i])
+            result.append(nxt)
+            i += 2
+        elif nxt in {'\n', '\r'}:
+            i += 2
+            if nxt == '\r' and i < len(text) and text[i] == '\n':
+                i += 1
+        else:
+            result.append(nxt)
+            i += 2
+    return ''.join(result)
+
+
 def parse_llm_response(raw: str) -> List[Dict[str, Any]]:
     """Extract and parse the JSON actions block from an LLM response.
 
-    Strips markdown escaping (\\_, \\*, etc.) from JSON string values
-    since the LLM often generates these and they are invalid in JSON.
+    Strips invalid JSON escapes that the LLM often generates
+    (markdown escaping like \\_, \\-, line continuations, etc.).
     """
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     if not match:
         raise ValueError("No JSON found in LLM response")
-    text = match.group(0)
-    text = re.sub(r'\\(?![\\"/bfnrtu])', '', text)
+    text = _clean_json_text(match.group(0))
     data = json.loads(text)
     return data.get("actions", [])
 
