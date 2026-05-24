@@ -1,47 +1,30 @@
 ---
-title: Inventory Manager
-description: Módulo para la recolección y compactación de inventarios de documentación.
+title: Gestor de Inventario
+description: Módulo para inspeccionar archivos de documentación existentes.
 sidebar_position: 1
 ---
 
-# Inventory Manager
+# Módulo `docs.inventory`
 
 ## Descripción general
 
-El módulo `inventory_manager` proporciona funciones para recorrer un directorio raíz de documentación, recolectar todos los archivos Markdown y generar un inventario compacto que pueda ser utilizado como contexto para un LLM. Las funciones reemplazan a las anteriores `get_docs_tree` y `build_docs_inventory`. Este módulo es parte fundamental del pipeline de decisión de documentación.
+Proporciona funciones para recolectar y resumir los archivos markdown existentes en un directorio de documentación, usado por el construcctor de prompts para evitar duplicados.
 
 ## Funciones públicas
 
-### `get_inventory(base_path: Path, label: str) -> dict[str, str]`
+### `get_inventory(base_path, label)`
 
-Recolecta todos los archivos Markdown bajo un directorio raíz.
-
-- **Parámetros:**
-  - `base_path` (Path): Directorio raíz donde buscar archivos `.md`.
-  - `label` (str): Etiqueta legible para registros (ej. "Developer", "User").
-- **Retorna:** `dict[str, str]` – Mapeo de ruta del archivo a su contenido.
-- **Excepciones:** No lanza excepciones; si el directorio no existe, retorna un diccionario vacío y registra una advertencia.
-
-### `compact_inventory(docs_tree: dict[str, str]) -> str`
-
-Construye un inventario compacto con las rutas de los archivos ordenadas alfabéticamente.
+Recolecta todos los archivos `.md` de un directorio de documentación.
 
 - **Parámetros:**
-  - `docs_tree` (dict[str, str]): Árbol de documentos obtenido de `get_inventory`.
-- **Retorna:** `str` – Lista de rutas separadas por saltos de línea, o cadena vacía si el árbol está vacío.
+  - `base_path` (Path): Ruta raíz de la documentación.
+  - `label` (str): Etiqueta para logging.
+- **Retorna:** `dict[str, str]` – mapeo de rutas a contenidos.
 
-## Uso de ejemplo
+### `compact_inventory(docs_tree)`
 
-```python
-from pathlib import Path
-from src.inventory_manager import get_inventory, compact_inventory
+Construye una cadena compacta con las rutas de archivos ordenadas alfabéticamente.
 
-dev_inventory = get_inventory(Path("docs/dev"), "Developer")
-compact = compact_inventory(dev_inventory)
-print(compact)
-```
-
-## Símbolos relacionados
-
-- `schema_manager.load_schema` – para cargar el esquema de documentación.
-- `src.docs_site_sync` – para sincronizar documentación generada.
+- **Parámetros:**
+  - `docs_tree` (dict[str, str]): Mapeo de rutas a contenidos.
+- **Retorna:** `str` – inventario plano, cada ruta en una línea.

@@ -1,81 +1,69 @@
 ---
-title: Generate Docs
-description: Orquestador principal del pipeline de generación de documentación.
-sidebar_position: 4
+title: Generación de Documentación
+description: Orquestador y ejecutor del pipeline de documentación.
+sidebar_position: 1
 ---
 
-# Módulo `src/generate_docs.py`
+# Módulo `pipeline`
 
 ## Descripción general
 
-Coordina el flujo completo del proyecto:
-1. Resuelve el rango de commits que aún necesita documentación.
-2. Extrae cambios de código fuente de `src/`.
-3. Lee e inventaria la documentación markdown existente.
-4. Recupera contexto semántico relevante del almacén de vectores.
-5. Solicita al LLM las acciones de documentación necesarias.
-6. Refuerza esas acciones contra redundancias obvias.
-7. Persiste las actualizaciones markdown y actualiza el almacén de vectores.
-8. Mantiene las páginas índice del sitio estático bajo `docs/`.
+Contiene la lógica de orquestación y ejecución del pipeline de documentación. El punto de entrada principal es `python -m src`.
 
-**Implicaciones para el proyecto:**
-- Este archivo es el corazón operativo. La mayoría de las preguntas "¿por qué el bot documentó esto?" se remontan a decisiones tomadas aquí.
+## Orquestador (`orchestrator.py`)
 
----
+### `run()`
 
-## Funciones públicas
+Ejecuta el pipeline completo:
+1. Carga el esquema de documentación.
+2. Configura el RAG.
+3. Resuelve la base de diff (último commit procesado).
+4. Obtiene los cambios de git estructurados.
+5. Recupera contexto relevante de documentación existente.
+6. Construye el prompt y llama al LLM.
+7. Ejecuta las acciones decididas (crear, actualizar, eliminar).
+8. Guarda el estado del último commit procesado.
 
-### `get_docs_tree(base_path, label)`
+**Nota:** El pipeline termina sin errores si no hay cambios o si HEAD ya fue procesado.
 
-Lee todos los archivos markdown bajo un directorio raíz de documentación.
+### Estado del pipeline
+- Archivo: `.doc_pipeline_state.json` (en la raíz del proyecto)
+- Contiene `last_commit` – hash del último commit procesado.
 
-- **Argumentos:**
-  - `base_path` (Path): Directorio raíz.
-  - `label` (str): Etiqueta legible para registros.
-- **Retorna:** `dict[str, str]` – mapeo de ruta a contenido.
+## Ejecutor (`executor.py`)
 
-### `build_docs_inventory(docs_tree)`
+### `execute_actions(actions)`
 
-Construye un inventario compacto de documentos existentes para el LLM. Esta función se introdujo para mejorar la conciencia contextual del LLM sobre qué documentación ya existe, reduciendo acciones redundantes.
+Aplica las acciones decididas por el LLM al sistema de archivos.
 
-- **Argumentos:**
-  - `docs_tree` (dict[str, str]): Árbol de documentos obtenido de `get_docs_tree`.
-- **Retorna:** `str` – texto resumido con las rutas de los archivos ordenadas alfabéticamente.
-- **Comportamiento:** Devuelve una cadena vacía si el árbol está vacío.
+- **Parámetros:**
+  - `actions` (list[dict]): Lista de acciones (create, update, delete).
+- **Retorna:** `list[str]` – rutas de archivos creados o actualizados.
+- **Seguridad:** Rechaza rutas que no comiencen con `docs/`.
+- **Efectos secundarios:** Actualiza el índice de vectores tras generación.
 
-### `normalize_doc_key(value)`
+## Punto de entrada (`__main__.py`)
 
-Normaliza una ruta o título en un slug comparable.
+Ejecuta `main()` que:
+1. Configura logging con `configure_logging()`.
+2. Llama a `run()` del orquestador.
+3. Captura excepciones fatales y termina con código 1.
 
-### `find_similar_existing_doc(raw_file_path, audience_root)`
+## Logging (`_logging.py`)
 
-Encuentra un archivo de documentación existente con un slug conceptual similar.
+### `configure_logging(level)`
 
-### `harden_actions_against_existing_docs(actions)`
+Configura el logging global con formato estándar.
 
-Reduce acciones `create` redundantes usando evidencia del sistema de archivos.
+- **Parámetros:**
+  - `level` (int): Nivel de logging (por defecto `logging.INFO`).
 
-### `main()`
+## Dependencias
 
-Ejecuta el pipeline de generación de documentación. Desde la versión actual, realiza los siguientes pasos adicionales:
-1. Obtiene los árboles de documentación existentes para desarrollador y usuario mediante `get_docs_tree`.
-2. Construye inventarios compactos con `build_docs_inventory`.
-3. Imprime el resumen de archivos encontrados.
-4. Pasa estos inventarios a `decide_actions` para que el LLM tenga conciencia de la documentación existente.
-
-**Cambios recientes:**
-- Se agregó la construcción de inventarios (`dev_docs_inventory`, `user_docs_inventory`) y su uso en el llamado a `decide_actions`.
-- La función `decide_actions` ahora acepta dos parámetros adicionales: `dev_docs_inventory` y `user_docs_inventory`.
-
----
-
-## Funciones internas
-
-No hay funciones internas nuevas en este cambio.
-
----
-
-## Relacionados
-
-- `decide_actions` en `modules/llm-decider.md`
-- `get_docs_tree`
+- `src.config.settings`: rutas, RAG_*, LLM_*
+- `src.config.models`: AUDIENCES
+- `src.git.diff`: get_structured_diff, format_diff_for_prompt, resolve_diff_base, get_current_head
+- `src.llm.prompt`: build_prompt
+- `src.llm.client`: decide_actions
+- `src.rag.*`: configuración, indexación, recuperación
+- `src.pipeline.executor`: execute_actions

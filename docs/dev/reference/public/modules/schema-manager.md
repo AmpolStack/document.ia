@@ -1,37 +1,33 @@
 ---
-title: Schema Manager
-description: Módulo para la carga y gestión del esquema de documentación.
+title: Gestor de Esquema
+description: Módulo para cargar y gestionar el schema.yml.
 sidebar_position: 1
 ---
 
-# Schema Manager
+# Módulo `docs.schema`
 
 ## Descripción general
 
-El módulo `schema_manager` se encarga de cargar el esquema de documentación desde un archivo YAML (`schema.yml`). Proporciona la función pública `load_schema`, que puede crear un esquema por defecto si se solicita. Es utilizado por el pipeline de generación de documentación para conocer la estructura esperada.
+Carga y gestiona el archivo de esquema de documentación (`schema.yml`). Si no existe, puede crear uno por defecto.
 
 ## Funciones públicas
 
-### `load_schema(ensure=False) -> dict`
+### `load_schema(path, ensure)`
 
-Carga y analiza el esquema de documentación.
+Carga y parsea el schema YAML.
 
 - **Parámetros:**
-  - `ensure` (bool): Si es `True` y el archivo de esquema no existe, se crea un esquema por defecto antes de cargarlo.
-- **Retorna:** `dict` – Diccionario con la definición del esquema.
-- **Excepciones:**
-  - `FileNotFoundError`: Si el archivo no existe y `ensure=False`.
+  - `path` (Path): Ruta al archivo schema.yml.
+  - `ensure` (bool): Si es `True`, crea schema por defecto si no existe.
+- **Retorna:** `dict` – contenido del schema.
+- **Errores:** Lanza `FileNotFoundError` si no existe y `ensure=False`.
 
-## Uso de ejemplo
+### `_ensure_schema(path)` (interna)
 
-```python
-from src.schema_manager import load_schema
+Crea un archivo schema.yml por defecto en la ruta indicada.
 
-schema = load_schema(ensure=True)
-print(schema)
-```
+## Esquema por defecto
 
-## Símbolos relacionados
-
-- `inventory_manager.get_inventory` – para recolectar documentos existentes.
-- `src.config.SCHEMA_PATH` – ruta al archivo de esquema.
+- `version: "1.0"`
+- `documentation.dev.sections`: API Reference, Architecture, Setup, Contributing
+- `documentation.user.sections`: Getting Started, User Guide, FAQ, Troubleshooting

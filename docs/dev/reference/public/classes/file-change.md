@@ -30,14 +30,12 @@ class FileChange:
 | `added_lines` | `list[str]` | Líneas añadidas sin el marcador de diff. |
 | `removed_lines` | `list[str]` | Líneas eliminadas sin el marcador de diff. |
 | `hunks` | `list[str]` | Líneas de diff crudas preservadas para construcción de prompts. |
-| `change_summary` | `str` | Resumen legible usado en logs y prompts. |
+| `change_summary` | `str` | Resumen legible del cambio usado en logs y prompts. |
 
-## Implicaciones para el proyecto
+## Uso
 
-- Este objeto es el límite entre el historial git crudo y el razonamiento del LLM.
-- Preservar tanto las listas de líneas normalizadas como los hunks crudos le da al pipeline espacio para evolucionar hacia una validación determinista más fuerte más adelante.
+Se instancia en `_build_change()` dentro de `git.diff`.
 
-## Símbolos relacionados
+## Dependencias
 
-- [Módulo config](../modules/config.md)
-- [Módulo diff-parser](../modules/diff-parser.md)
+- `src.config.models`: Definición de la dataclass.

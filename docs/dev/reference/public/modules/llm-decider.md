@@ -1,18 +1,53 @@
 ---
-title: LLM Decider
-description: Capa de decisión del LLM para planificación de documentación.
-sidebar_position: 5
+title: Decisor LLM
+description: Módulo para construir prompts y comunicarse con el LLM.
+sidebar_position: 1
 ---
 
-# Módulo `src/llm_decider.py`
+# Módulo `llm`
 
 ## Descripción general
 
-Convierte el contexto del repositorio en un prompt para el LLM y transforma la respuesta en acciones estructuradas de documentación. No escribe archivos por sí mismo; proporciona el límite de razonamiento entre las entradas deterministas del proyecto y la ejecución descendente.
+Construye el prompt de decisión, envía la consulta al LLM y parsea la respuesta JSON para obtener las acciones de documentación.
 
-**Implicaciones para el proyecto:**
-- La redacción del prompt aquí influye fuertemente en si el sistema prefiere no-op, update o create.
-- Es uno de los módulos de mayor apalancamiento: pequeños cambios en las instrucciones pueden cambiar los resultados de documentación en cada ejecución de CI.
-- Debido a que el proyecto depende de respuestas solo JSON, la claridad del prompt y la robustez del parseo afectan directamente la confiabilidad de la automatización.
+## Funciones públicas
 
-*(No se han modificado funciones específicas en el diff más allá de la documentación del módulo.)*
+### `build_prompt(diff_text, contexts, inventories)`
+
+Construye el prompt completo para el LLM.
+
+- **Parámetros:**
+  - `diff_text` (str): Diff formateado.
+  - `contexts` (dict[str, str]): Contexto relevante por audiencia.
+  - `inventories` (dict[str, str]): Inventario de archivos existentes por audiencia.
+- **Retorna:** `str` – prompt listo para enviar.
+
+### `call_llm(prompt)`
+
+Envía el prompt al LLM configurado y retorna la respuesta cruda.
+
+- **Parámetros:**
+  - `prompt` (str): Prompt completo.
+- **Retorna:** `str` – respuesta del LLM.
+
+### `parse_llm_response(raw)`
+
+Extrae y parsea el bloque JSON de acciones de la respuesta del LLM.
+
+- **Parámetros:**
+  - `raw` (str): Respuesta cruda del LLM.
+- **Retorna:** `list[dict]` – lista de acciones.
+- **Errores:** Lanza `ValueError` si no encuentra JSON.
+
+### `decide_actions(prompt)`
+
+Función combinada: envía el prompt, parsea la respuesta y retorna las acciones.
+
+- **Parámetros:**
+  - `prompt` (str): Prompt completo.
+- **Retorna:** `list[dict]` – lista de acciones.
+
+## Dependencias
+
+- `src.llm.prompt`: `build_prompt`
+- `src.llm.client`: `call_llm`, `parse_llm_response`, `decide_actions`
