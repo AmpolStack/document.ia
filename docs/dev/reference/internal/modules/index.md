@@ -1,19 +1,14 @@
 ---
 title: Módulos Internos
-description: Índice de módulos internos de referencia para desarrolladores.
+description: Documentación de símbolos internos del sistema.
 sidebar_position: 1
 ---
 
 # Módulos Internos
 
-## Descripción general
+Esta sección contiene la documentación de módulos y funciones internas que no forman parte de la API pública pero son relevantes para mantenimiento y depuración.
 
-Esta sección contiene la documentación de referencia para los módulos internos (símbolos con prefijo `_`) que son relevantes para el mantenimiento y la arquitectura del sistema.
+## Módulos
 
-## Contenido
-
-- [Schema Manager (Internal)](schema-manager.md)
-
-## Cuándo leer esta sección
-
-Consulta esta sección cuando necesites entender el funcionamiento interno de helpers y funciones auxiliares utilizadas por los módulos públicos.
+- [Schema Manager](schema-manager.md) – Gestión de esquemas de documentación.
+- [Cliente LLM interno](llm-client.md) – Funciones internas de limpieza de JSON.

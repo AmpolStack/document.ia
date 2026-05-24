@@ -1,16 +1,14 @@
 ---
 title: Módulos Públicos
-description: Índice de módulos públicos de referencia para desarrolladores.
+description: Documentación de módulos públicos del sistema.
 sidebar_position: 1
 ---
 
 # Módulos Públicos
 
-## Descripción general
+Esta sección contiene la documentación de los módulos y funciones públicas que forman la API del sistema.
 
-Esta sección contiene la documentación de referencia para los módulos públicos del proyecto. Cada página describe un módulo, sus funciones públicas y ejemplos de uso.
-
-## Contenido
+## Módulos
 
 - [Config](config.md)
 - [Diff Parser](diff-parser.md)
@@ -20,7 +18,4 @@ Esta sección contiene la documentación de referencia para los módulos públic
 - [LLM Decider](llm-decider.md)
 - [RAG Manager](rag-manager.md)
 - [Schema Manager](schema-manager.md)
-
-## Cuándo leer esta sección
-
-Consulta esta sección cuando necesites información detallada sobre un módulo específico, sus funciones y parámetros.
+- [Pipeline Executor](pipeline-executor.md)
