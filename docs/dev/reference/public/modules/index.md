@@ -1,25 +1,26 @@
 ---
-title: Modulos
-sidebar_label: Modulos
-description: Indice navegable de la seccion dev / reference / public / modules.
+title: Módulos Públicos
+description: Índice de módulos públicos de referencia para desarrolladores.
 sidebar_position: 1
 ---
 
-<!-- AUTO-GENERATED: docs-site-sync -->
+# Módulos Públicos
 
-# Modulos
+## Descripción general
 
-Esta pagina se actualiza automaticamente para servir como punto de entrada navegable en el sitio de documentacion.
+Esta sección contiene la documentación de referencia para los módulos públicos del proyecto. Cada página describe un módulo, sus funciones públicas y ejemplos de uso.
 
-## Subsecciones
-
-- Sin elementos todavia.
-
-## Documentos
+## Contenido
 
 - [Config](config.md)
 - [Diff Parser](diff-parser.md)
 - [Docs Site Sync](docs-site-sync.md)
 - [Generate Docs](generate-docs.md)
-- [Llm Decider](llm-decider.md)
-- [Rag Manager](rag-manager.md)
+- [Inventory Manager](inventory-manager.md)
+- [LLM Decider](llm-decider.md)
+- [RAG Manager](rag-manager.md)
+- [Schema Manager](schema-manager.md)
+
+## Cuándo leer esta sección
+
+Consulta esta sección cuando necesites información detallada sobre un módulo específico, sus funciones y parámetros.
