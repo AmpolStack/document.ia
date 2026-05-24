@@ -26,7 +26,7 @@ def parse_llm_response(raw: str) -> List[Dict[str, Any]]:
     if not match:
         raise ValueError("No JSON found in LLM response")
     text = match.group(0)
-    text = re.sub(r'\\(?=[_*\[\]()])', '', text)
+    text = re.sub(r'\\(?![\\"/bfnrtu])', '', text)
     data = json.loads(text)
     return data.get("actions", [])
 
